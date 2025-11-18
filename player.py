@@ -25,6 +25,10 @@ class Player:
 
         # Sprite
         self.car_image = pg.image.load("resources/textures/car.png").convert_alpha()
+        self.sprite_angle = 0.0  # current visual rotation
+        self.max_sprite_angle = 45  # degrees
+        self.sprite_turn_speed = 180  # degrees per second
+        self.sprite_return_speed = 240  # degrees per second
 
     @property
     def pos(self):
@@ -85,6 +89,29 @@ class Player:
                 dx += side_dx
                 dy += side_dy
 
+        keys = pg.key.get_pressed()
+        dt = self.game.delta_time  # convert to seconds
+
+        # --- Steering visual offset ---
+        if keys[pg.K_a]:
+            self.sprite_angle -= self.sprite_turn_speed * dt
+        elif keys[pg.K_d]:
+            self.sprite_angle += self.sprite_turn_speed * dt
+        else:
+            # Return to center when no input
+            if self.sprite_angle > 0:
+                self.sprite_angle -= self.sprite_return_speed * dt
+                if self.sprite_angle < 0:
+                    self.sprite_angle = 0
+            elif self.sprite_angle < 0:
+                self.sprite_angle += self.sprite_return_speed * dt
+                if self.sprite_angle > 0:
+                    self.sprite_angle = 0
+
+        # Clamp between -45 and +45 degrees
+        self.sprite_angle = max(-self.max_sprite_angle,
+                                min(self.sprite_angle, self.max_sprite_angle))
+
         # Apply collision
         self.check_wall_collision(dx, dy)
 
@@ -118,10 +145,12 @@ class Player:
             self.y = next_y
 
     def draw(self, screen):
-        # Draw car sprite at center of screen (camera offset already applied)
-        rotated_car = pg.transform.rotate(self.car_image, -math.degrees(self.angle))
-        rect = rotated_car.get_rect(center=(WIDTH/2, HEIGHT/2))
-        screen.blit(rotated_car, rect)
+        # Rotate the sprite around its center
+        rotated = pg.transform.rotate(self.car_image, -self.sprite_angle)
+        print(self.sprite_angle)
+        rect = rotated.get_rect(center=(HALF_WIDTH, HALF_HEIGHT + 250))
+
+        screen.blit(rotated, rect)
 
     def update(self):
         self.movement()
