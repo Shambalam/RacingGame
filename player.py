@@ -7,6 +7,8 @@ class Player:
         self.game = game
         self.x, self.y = PLAYER_POS
         self.angle = PLAYER_ANGLE
+        # Hitbox (collision radius in map units)
+        self.hitbox_radius = 1  # try 0.25–0.35 for cars
 
         # Movement physics
         self.velocity = 0.0
@@ -122,17 +124,20 @@ class Player:
         self.camera_y += (cam_target_y - self.camera_y) * self.camera_lerp
 
     def check_wall_collision(self, dx, dy):
+        r = self.hitbox_radius
         next_x = self.x + dx
         next_y = self.y + dy
 
-        # Four-point collision
-        points_x = [(next_x + PLAYER_RADIUS, self.y), (next_x - PLAYER_RADIUS, self.y)]
-        points_y = [(self.x, next_y + PLAYER_RADIUS), (self.x, next_y - PLAYER_RADIUS)]
+        # Four main collision points
+        points_x = [(next_x + r, self.y), (next_x - r, self.y)]
+        points_y = [(self.x, next_y + r), (self.x, next_y - r)]
+
+        # Diagonal points (prevents corner clipping)
         points_diag = [
-            (next_x + PLAYER_RADIUS, next_y + PLAYER_RADIUS),
-            (next_x - PLAYER_RADIUS, next_y + PLAYER_RADIUS),
-            (next_x + PLAYER_RADIUS, next_y - PLAYER_RADIUS),
-            (next_x - PLAYER_RADIUS, next_y - PLAYER_RADIUS),
+            (next_x + r, next_y + r),
+            (next_x - r, next_y + r),
+            (next_x + r, next_y - r),
+            (next_x - r, next_y - r),
         ]
 
         if all((int(px), int(py)) not in self.game.map.world_map for (px, py) in points_x):
@@ -147,7 +152,6 @@ class Player:
     def draw(self, screen):
         # Rotate the sprite around its center
         rotated = pg.transform.rotate(self.car_image, -self.sprite_angle)
-        print(self.sprite_angle)
         rect = rotated.get_rect(center=(HALF_WIDTH, HALF_HEIGHT + 250))
 
         screen.blit(rotated, rect)
